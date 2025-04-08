@@ -6,7 +6,7 @@ from google.genai import types
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv() 
 
 # Set up Gemini API key from .env file
 client = genai.Client(
@@ -36,7 +36,7 @@ def generate_response(query, history=None):
         full_response = ""
         
         for chunk in response_stream:
-            chunk_text = chunk.text
+            chunk_text = chunk.text if chunk.text is not None else ""
             full_response += chunk_text
             yield chunk_text
             
@@ -49,8 +49,7 @@ def generate_response(query, history=None):
     else:
         # For first-time queries with no history, use the system instruction and context
         system_instruction = f"""You are a helpful pharmaceutical regulation assistant specializing in 
-        pharmaceutical CGMP Regulations. Provide clear, accurate information about regulatory requirements,
-        quality systems, and compliance guidelines. Use conversational language while maintaining 
+        You are a helpful pharma regulation assistant specializing in 21 CFR Part 211 and Part 11. Use conversational language while maintaining 
         technical accuracy. Base your answers on the following context:
         
         {LONG_CONTEXT}
@@ -74,7 +73,7 @@ def generate_response(query, history=None):
             contents=contents,
             config=generate_config,
         ):
-            chunk_text = chunk.text
+            chunk_text = chunk.text if chunk.text is not None else ""
             full_response += chunk_text
             yield chunk_text
             
@@ -92,7 +91,7 @@ if "chat_history" not in st.session_state:
 
 # Streamlit app layout
 st.title("Pharmaceutical Regulation Assistant")
-st.write("Ask questions about CGMP Regulations and pharmaceutical quality systems.")
+st.write("Ask questions about 21 CFR Part 211 and Part 11.")
 
 # Display chat history
 for message in st.session_state.chat_history:
@@ -126,15 +125,21 @@ if user_query:
             # First message
             response_generator = generate_response(user_query)
         
-        for chunk in response_generator:
-            if isinstance(chunk, tuple):
-                # This is the final return value with the full response and history
-                full_response, st.session_state.chat_history = chunk
-                break
-            else:
-                # This is a text chunk
-                full_response += chunk
-                response_placeholder.write(full_response)
+        try:
+            for chunk in response_generator:
+                if isinstance(chunk, tuple):
+                    # This is the final return value with the full response and history
+                    full_response, st.session_state.chat_history = chunk
+                    break
+                else:
+                    # This is a text chunk
+                    full_response += chunk if chunk is not None else ""
+                    response_placeholder.write(full_response)
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+            full_response = "Sorry, I encountered an error processing your request."
+            st.session_state.chat_history.append({"role": "user", "content": user_query})
+            st.session_state.chat_history.append({"role": "assistant", "content": full_response})
                 
         # Ensure the final response is displayed
         response_placeholder.write(full_response)

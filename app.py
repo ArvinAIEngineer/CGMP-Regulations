@@ -61,7 +61,7 @@ def generate_response(query, history=None):
         generate_config = types.GenerateContentConfig(
             system_instruction=system_instruction,
             temperature=0.2,  # Lower temperature for more factual responses
-            max_output_tokens=800,  # Allow for comprehensive answers
+            max_output_tokens=8000,  # Allow for comprehensive answers
         )
         
         contents = [query]
